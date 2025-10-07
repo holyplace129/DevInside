@@ -10,6 +10,12 @@ spring:
 #    username: sa
 #    password:
 
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false
+
   data:
     redis:
       host: localhost
