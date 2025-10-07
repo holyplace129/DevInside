@@ -7,6 +7,7 @@ import org.learn.board.domain.gallery.domain.Gallery;
 import org.learn.board.domain.gallery.domain.repository.GalleryRepository;
 import org.learn.board.domain.post.domain.Post;
 import org.learn.board.domain.post.domain.repository.PostRepository;
+import org.learn.board.domain.vote.domain.repository.PostVoteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,6 +26,9 @@ public class VoteFacadeConcurrencyTest {
 
     @Autowired
     private PostRepository postRepository;
+
+    @Autowired
+    private PostVoteRepository postVoteRepository;
 
     @Autowired
     private GalleryRepository galleryRepository;
@@ -58,6 +62,7 @@ public class VoteFacadeConcurrencyTest {
 
     @AfterEach
     void tearDown() {
+        postVoteRepository.deleteAll();
         postRepository.deleteAll();
         galleryRepository.deleteAll();
     }
