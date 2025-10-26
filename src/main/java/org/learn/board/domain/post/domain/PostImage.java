@@ -15,7 +15,8 @@ import java.time.LocalDateTime;
 public class PostImage extends BaseTimeEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "post_image_id_seq")
+    @SequenceGenerator(name = "post_image_id_seq", sequenceName = "POST_IMAGE_ID_SEQ", allocationSize = 1)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)

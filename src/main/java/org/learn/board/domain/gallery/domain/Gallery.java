@@ -13,7 +13,8 @@ import org.learn.board.global.domain.BaseTimeEntity;
 public class Gallery extends BaseTimeEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "gallery_id_seq")
+    @SequenceGenerator(name = "gallery_id_seq", sequenceName = "GALLERY_ID_SEQ", allocationSize = 1)
     private Long id;
 
     @Column(length = 50, nullable = false, unique = true)

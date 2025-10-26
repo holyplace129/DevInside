@@ -17,7 +17,8 @@ import org.learn.board.global.domain.BaseTimeEntity;
 public class PostReport extends BaseTimeEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "post_report_id_seq")
+    @SequenceGenerator(name = "post_REPORT_id_seq", sequenceName = "POST_REPORT_ID_SEQ", allocationSize = 1)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)

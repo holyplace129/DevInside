@@ -5,6 +5,7 @@ import org.learn.board.domain.post.domain.Post;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -33,4 +34,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // 갤러리 내에서 24이내 작성
     List<Post> findTop10ByGalleryAndCreatedAtAfterAndLikeCountGreaterThanOrderByLikeCountDesc(Gallery gallery, LocalDateTime localDateTime, int likeCount);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM Post p")
+    void deleteAllInBatch();
 }

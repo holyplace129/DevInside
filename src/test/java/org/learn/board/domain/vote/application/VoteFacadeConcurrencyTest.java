@@ -62,9 +62,9 @@ public class VoteFacadeConcurrencyTest {
 
     @AfterEach
     void tearDown() {
-        postVoteRepository.deleteAll();
-        postRepository.deleteAll();
-        galleryRepository.deleteAll();
+        postVoteRepository.deleteAllInBatch();
+        postRepository.deleteAllInBatch();
+        galleryRepository.deleteAllInBatch();
     }
 
     @Test
