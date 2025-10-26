@@ -17,7 +17,8 @@ import org.learn.board.global.domain.BaseTimeEntity;
 public class CommentReport extends BaseTimeEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "comment_report_id_seq")
+    @SequenceGenerator(name = "comment_report_id_seq", sequenceName = "COMMENT_REPORT_ID_SEQ", allocationSize = 1)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)

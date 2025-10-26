@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.learn.board.domain.post.application.dto.PostListResponse;
 import org.learn.board.domain.search.application.SearchFacade;
 import org.learn.board.domain.search.application.dto.SearchRequest;
+import org.learn.board.global.common.PageResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -22,10 +23,10 @@ public class SearchController {
     private final SearchFacade searchFacade;
 
     @GetMapping("/posts")
-    public ResponseEntity<Page<PostListResponse>> searchPost(
+    public ResponseEntity<PageResponse<PostListResponse>> searchPost(
             @ModelAttribute SearchRequest searchRequest,
             @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
-        Page<PostListResponse> responses = searchFacade.searchPosts(searchRequest, pageable);
+        PageResponse<PostListResponse> responses = searchFacade.searchPosts(searchRequest, pageable);
 
         return ResponseEntity.ok(responses);
     }

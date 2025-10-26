@@ -8,6 +8,7 @@ import org.learn.board.domain.post.application.dto.PostCreateRequest;
 import org.learn.board.domain.post.application.dto.PostDetailResponse;
 import org.learn.board.domain.post.application.dto.PostListResponse;
 import org.learn.board.domain.post.application.dto.PostUpdateRequest;
+import org.learn.board.global.common.PageResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -16,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -64,10 +66,10 @@ public class PostController {
 
     // 갤러리 내 게시글 목록
     @GetMapping
-    public ResponseEntity<Page<PostListResponse>> findPostByGallery(
+    public ResponseEntity<PageResponse<PostListResponse>> findPostByGallery(
             @PathVariable String galleryName,
             @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
-        Page<PostListResponse> responses = postQueryFacade.findPostsByGallery(galleryName, pageable);
+        PageResponse<PostListResponse> responses = postQueryFacade.findPostsByGallery(galleryName, pageable);
         return ResponseEntity.ok(responses);
     }
 
@@ -79,5 +81,12 @@ public class PostController {
         PostDetailResponse response = postQueryFacade.findPostById(postId);
         postFacade.increaseViewCount(postId);
         return ResponseEntity.ok(response);
+    }
+
+    // 갤러리별 인기 게시글
+    @GetMapping("/popular")
+    public ResponseEntity<List<PostListResponse>> findGalleryPopularPosts(@PathVariable String galleryName) {
+        List<PostListResponse> responses = postQueryFacade.findGalleryPopularPosts(galleryName);
+        return ResponseEntity.ok(responses);
     }
 }

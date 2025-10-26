@@ -13,6 +13,8 @@ import org.learn.board.domain.post.domain.repository.PostRepository;
 import org.learn.board.global.error.ErrorCode;
 import org.learn.board.global.error.exception.EntityNotFoundException;
 import org.learn.board.global.error.exception.InvalidValueException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,6 +62,10 @@ public class PostFacade {
 
 
     // 게시글 수정
+    @Caching(evict = {
+            @CacheEvict(value = "postDetail", key = "#postId"),
+            @CacheEvict(value = "galleryPosts", allEntries = true) // 'galleryPosts' 캐시 전체를 비움
+    })
     public void updatePost(Long postId, PostUpdateRequest request) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new EntityNotFoundException(ErrorCode.POST_NOT_FOUND));
@@ -72,6 +78,10 @@ public class PostFacade {
     }
 
     // 게시글 삭제
+    @Caching(evict = {
+            @CacheEvict(value = "postDetail", key = "#postId"),
+            @CacheEvict(value = "galleryPosts", allEntries = true)
+    })
     public void deletePost(Long postId, String password) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new EntityNotFoundException(ErrorCode.POST_NOT_FOUND));

@@ -6,6 +6,7 @@ import org.learn.board.domain.post.application.mapper.PostMapper;
 import org.learn.board.domain.post.domain.Post;
 import org.learn.board.domain.post.domain.repository.PostRepository;
 import org.learn.board.domain.search.application.dto.SearchRequest;
+import org.learn.board.global.common.PageResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,9 +20,9 @@ public class SearchFacade {
     private final PostRepository postRepository;
     private final PostMapper postMapper;
 
-    public Page<PostListResponse> searchPosts(SearchRequest searchRequest, Pageable pageable) {
+    public PageResponse<PostListResponse> searchPosts(SearchRequest searchRequest, Pageable pageable) {
         if (searchRequest.getKeyword() == null || searchRequest.getKeyword().isBlank()) {
-            return Page.empty();
+            Page<Post> posts;
         }
 
         Page<Post> posts = switch (searchRequest.getType()) {
@@ -33,7 +34,9 @@ public class SearchFacade {
             default -> throw new IllegalArgumentException("유효하지 않은 검색 타입입니다: " + searchRequest.getType());
         };
 
-        return posts.map(postMapper::toListResponse);
+        Page<PostListResponse> dtoPage = posts.map(postMapper::toListResponse);
+
+        return new PageResponse<>(dtoPage);
     }
 
 }
