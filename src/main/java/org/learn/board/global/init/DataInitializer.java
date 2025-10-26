@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-@Profile("!test") // test 프로파일에서는 실행되지 않도록 설정
+@Profile("init-data") // test 프로파일에서는 실행되지 않도록 설정
 @RequiredArgsConstructor
 public class DataInitializer {
 

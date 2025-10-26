@@ -14,7 +14,8 @@ spring:
     jdbc:
       initialize-schema: always
     job:
-      enabled: false
+      execution:
+        enabled: false
 
   data:
     redis:
