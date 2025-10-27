@@ -10,11 +10,13 @@ import org.learn.board.domain.post.application.mapper.PostMapper;
 import org.learn.board.domain.post.domain.Post;
 import org.learn.board.domain.post.domain.PostImage;
 import org.learn.board.domain.post.domain.repository.PostRepository;
+import org.learn.board.domain.post.event.PostSavedEvent;
 import org.learn.board.global.error.ErrorCode;
 import org.learn.board.global.error.exception.EntityNotFoundException;
 import org.learn.board.global.error.exception.InvalidValueException;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,7 @@ public class PostFacade {
     private final GalleryRepository galleryRepository;
     private final PasswordEncoder passwordEncoder;
     private final PostMapper postMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     // 게시글 생성
     public PostDetailResponse createPost(String galleryName, PostCreateRequest request) {
@@ -56,6 +59,8 @@ public class PostFacade {
 
         Post savePost = postRepository.save(post);
 
+        eventPublisher.publishEvent(PostSavedEvent.from(savePost));
+
         return postMapper.toDetailResponse(savePost);
     }
 
@@ -75,6 +80,8 @@ public class PostFacade {
         }
 
         post.update(request.getTitle(), request.getContent());
+
+        eventPublisher.publishEvent(PostSavedEvent.from(post));
     }
 
     // 게시글 삭제

@@ -44,6 +44,9 @@ spring:
       max-file-size: 10MB   # 개별 파일의 최대 크기
       max-request-size: 50MB # 한 번의 요청에 포함된 모든 파일의 총 크기
 
+  elasticsearch:
+    uris: http://localhost:9200
+
 custom:
   upload:
     path: C:/codes/board/uploads/
