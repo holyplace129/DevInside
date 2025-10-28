@@ -77,7 +77,10 @@ dependencies {
 
     // elasticsearch
     implementation ("org.springframework.boot:spring-boot-starter-data-elasticsearch")
-}
+
+    // data faker
+    implementation("net.datafaker:datafaker:2.1.0")
+    }
 
 tasks.named('test') {
     useJUnitPlatform()

@@ -35,5 +35,4 @@ public class SearchFacade {
         Page<PostListResponse> dtoPage = documents.map(postMapper::toListResponse);
         return new PageResponse<>(dtoPage);
     }
-
 }

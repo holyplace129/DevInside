@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import org.learn.board.global.domain.BaseTimeEntity;
 
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Entity
 public class Gallery extends BaseTimeEntity {
 
