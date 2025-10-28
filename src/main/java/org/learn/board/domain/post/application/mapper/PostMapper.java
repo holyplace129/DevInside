@@ -3,6 +3,7 @@ package org.learn.board.domain.post.application.mapper;
 import org.learn.board.domain.post.application.dto.PostDetailResponse;
 import org.learn.board.domain.post.application.dto.PostListResponse;
 import org.learn.board.domain.post.domain.Post;
+import org.learn.board.domain.search.document.PostDocument;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -19,6 +20,11 @@ public interface PostMapper {
     // Post -> PostListResponse 매핑
     @Mapping(target = "createdAt", expression = "java(formatCreatedAt(post.getCreatedAt()))")
     PostListResponse toListResponse(Post post);
+
+    // PostDocument 변환
+    @Mapping(target = "createdAt", expression = "java(formatCreatedAt(postDocument.getCreatedAt()))")
+    @Mapping(target = "commentCount", ignore = true)
+    PostListResponse toListResponse(PostDocument postDocument);
 
     // 매핑 중 호출 가능하게 default 메소드로 날짜 포맷팅
     default String formatCreatedAt(LocalDateTime createdAt) {
