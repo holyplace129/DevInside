@@ -11,7 +11,7 @@
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 | 분류 | 기술 |
 | :--- | :--- |
 | **Language** | Java 17 |
