@@ -25,8 +25,7 @@
 ---
 
 ## System Architecture
-(여기에 Mermaid 다이어그램 또는 아키텍처 이미지를 삽입하세요)
-![System Architecture](시스템 아키텍처 이미지 URL)
+<img width="4311" height="2142" alt="Image" src="https://github.com/user-attachments/assets/256edff3-2b37-4627-8d25-d9f0463cea50" />
 
 **핵심 아키텍처 특징:**
 *   **Layered Architecture (DDD)**: `Controller -> Facade -> Domain`의 계층형 구조로 관심사 분리
