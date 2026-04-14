@@ -24,6 +24,7 @@ public interface PostMapper {
     // PostDocument 변환
     @Mapping(target = "createdAt", expression = "java(formatCreatedAt(postDocument.getCreatedAt()))")
     @Mapping(target = "commentCount", ignore = true)
+    @Mapping(target = "viewCount", ignore = true)
     PostListResponse toListResponse(PostDocument postDocument);
 
     // 매핑 중 호출 가능하게 default 메소드로 날짜 포맷팅
@@ -37,7 +38,7 @@ public interface PostMapper {
         if (createdDate.isEqual(today)) {
             return createdAt.format(DateTimeFormatter.ofPattern("HH:mm"));
         } else if (createdDate.getYear() == today.getYear()) {
-            return createdAt.format(DateTimeFormatter.ofPattern("MM:dd"));
+            return createdAt.format(DateTimeFormatter.ofPattern("MM.dd"));
         } else {
             return createdAt.format(DateTimeFormatter.ofPattern("yy.MM.dd"));
         }

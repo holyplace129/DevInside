@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-@Component
+// @Component 비활성화: BatchScheduler가 동일한 역할을 수행하므로 중복 실행 방지
 @Slf4j
 @RequiredArgsConstructor
 public class PopularPostScheduler {
@@ -56,7 +56,7 @@ public class PopularPostScheduler {
                     .map(postMapper::toListResponse)
                     .collect(Collectors.toList());
 
-            String galleryKey = "popular:posts:gallery" + gallery.getName();
+            String galleryKey = "popular:posts:gallery:" + gallery.getName();
             redisTemplate.opsForValue().set(galleryKey, galleryDtos, 15, TimeUnit.MINUTES);
             log.info("{} 갤러리 인기 게시글 {}건 Redis 저장 완료", gallery.getDisplayName(), galleryDtos.size());
         }

@@ -25,6 +25,7 @@ public class PostCreateRequest {
     private String writer;
 
     @NotBlank(message = "비밀번호는 필수입니다.")
+    @Size(min = 4, max = 20, message = "비밀번호는 4자 이상 20자 이하여야 합니다.")
     private String password;
 
     private List<String> imageUrl;

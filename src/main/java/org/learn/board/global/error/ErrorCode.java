@@ -27,7 +27,10 @@ public enum ErrorCode {
 
     // Vote & Report Errors
     ALREADY_VOTED(HttpStatus.CONFLICT, "V001", "이미 추천/비추천한 게시물입니다."),
-    ALREADY_REPORTED(HttpStatus.CONFLICT, "R001", "이미 신고한 게시물입니다.");
+    ALREADY_REPORTED(HttpStatus.CONFLICT, "R001", "이미 신고한 게시물입니다."),
+
+    // External Service Errors
+    SEARCH_SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "S001", "검색 서비스에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
 
     private final HttpStatus status;
     private final String code;

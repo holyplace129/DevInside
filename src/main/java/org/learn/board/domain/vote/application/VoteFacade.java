@@ -12,6 +12,7 @@ import org.learn.board.domain.vote.domain.repository.PostVoteRepository;
 import org.learn.board.global.aop.DistributedLock;
 import org.learn.board.global.error.ErrorCode;
 import org.learn.board.global.error.exception.EntityNotFoundException;
+import org.learn.board.global.error.exception.InvalidValueException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +34,7 @@ public class VoteFacade {
                 .orElseThrow(() -> new EntityNotFoundException(ErrorCode.POST_NOT_FOUND));
 
         postVoteRepository.findByPostAndVoterIp(post, voterIp).ifPresent(v -> {
-            throw new EntityNotFoundException(ErrorCode.ALREADY_VOTED);
+            throw new InvalidValueException(ErrorCode.ALREADY_VOTED);
         });
 
         PostVote postVote = PostVote.builder()
@@ -43,7 +44,7 @@ public class VoteFacade {
                 .build();
         postVoteRepository.save(postVote);
 
-        post.increaseLikeCount();
+        postRepository.incrementLikeCount(postId);
     }
 
     // 게시글 비추천
@@ -53,7 +54,7 @@ public class VoteFacade {
                 .orElseThrow(() -> new EntityNotFoundException(ErrorCode.POST_NOT_FOUND));
 
         postVoteRepository.findByPostAndVoterIp(post, voterIp).ifPresent(v -> {
-            throw new EntityNotFoundException(ErrorCode.ALREADY_VOTED);
+            throw new InvalidValueException(ErrorCode.ALREADY_VOTED);
         });
 
         PostVote postVote = PostVote.builder()
@@ -63,7 +64,7 @@ public class VoteFacade {
                 .build();
         postVoteRepository.save(postVote);
 
-        post.increaseDislikeCount();
+        postRepository.incrementDislikeCount(postId);
     }
 
     // 댓글 추천
@@ -73,7 +74,7 @@ public class VoteFacade {
                 .orElseThrow(() -> new EntityNotFoundException(ErrorCode.COMMENT_NOT_FOUND));
 
         commentVoteRepository.findByCommentAndVoterIp(comment, voterIp).ifPresent(v -> {
-            throw new EntityNotFoundException(ErrorCode.ALREADY_VOTED);
+            throw new InvalidValueException(ErrorCode.ALREADY_VOTED);
         });
 
         CommentVote commentVote = CommentVote.builder()
@@ -82,6 +83,6 @@ public class VoteFacade {
                 .build();
         commentVoteRepository.save(commentVote);
 
-        comment.increaseLikeCount();
+        commentRepository.incrementLikeCount(commentId);
     }
 }

@@ -17,6 +17,7 @@ public class PostDetailResponse {
     private int viewCount;
     private int likeCount;
     private int dislikeCount;
+    private int commentCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     // 참고: password 필드는 절대 응답에 포함하지 않습니다.

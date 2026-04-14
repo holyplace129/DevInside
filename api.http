@@ -1,0 +1,217 @@
+@baseUrl = http://localhost:8080
+@galleryName = test-gallery
+@postId = 1
+@commentId = 1
+
+# =====================
+# Gallery
+# =====================
+
+### 갤러리 전체 조회
+GET {{baseUrl}}/galleries
+
+###
+
+### 갤러리 단건 조회
+GET {{baseUrl}}/galleries/{{galleryName}}
+
+###
+
+### 갤러리 생성
+POST {{baseUrl}}/galleries
+Content-Type: application/json
+
+{
+  "name": "test-gallery",
+  "displayName": "테스트 갤러리",
+  "description": "테스트용 갤러리입니다."
+}
+
+###
+
+### 갤러리 수정
+PUT {{baseUrl}}/galleries/{{galleryName}}
+Content-Type: application/json
+
+{
+  "displayName": "테스트 갤러리 (수정됨)",
+  "description": "설명 수정"
+}
+
+###
+
+### 갤러리 삭제
+DELETE {{baseUrl}}/galleries/{{galleryName}}
+
+# =====================
+# Post
+# =====================
+
+###
+
+### 게시글 작성
+POST {{baseUrl}}/galleries/{{galleryName}}/posts
+Content-Type: application/json
+
+{
+  "title": "테스트 게시글 제목",
+  "content": "테스트 게시글 내용입니다.",
+  "writer": "테스터",
+  "password": "1234"
+}
+
+###
+
+### 게시글 목록 조회
+GET {{baseUrl}}/galleries/{{galleryName}}/posts?page=0&size=10
+
+###
+
+### 게시글 상세 조회
+GET {{baseUrl}}/galleries/{{galleryName}}/posts/{{postId}}
+
+###
+
+### 게시글 수정
+PUT {{baseUrl}}/galleries/{{galleryName}}/posts/{{postId}}
+Content-Type: application/json
+
+{
+  "title": "수정된 제목",
+  "content": "수정된 내용입니다.",
+  "password": "1234"
+}
+
+###
+
+### 게시글 삭제
+DELETE {{baseUrl}}/galleries/{{galleryName}}/posts/{{postId}}
+Content-Type: application/json
+
+{
+  "password": "1234"
+}
+
+###
+
+### 갤러리 인기 게시글 조회
+GET {{baseUrl}}/galleries/{{galleryName}}/posts/popular
+
+###
+
+### 전체 게시글 목록 조회
+GET {{baseUrl}}/posts?page=0&size=20
+
+###
+
+### 전체 인기 게시글 조회
+GET {{baseUrl}}/posts/popular
+
+# =====================
+# Comment
+# =====================
+
+###
+
+### 댓글 작성
+POST {{baseUrl}}/galleries/{{galleryName}}/posts/{{postId}}/comments
+Content-Type: application/json
+
+{
+  "content": "테스트 댓글입니다.",
+  "writer": "댓글러",
+  "password": "1234"
+}
+
+###
+
+### 대댓글 작성
+POST {{baseUrl}}/galleries/{{galleryName}}/posts/{{postId}}/comments
+Content-Type: application/json
+
+{
+  "parentId": 1,
+  "content": "테스트 대댓글입니다.",
+  "writer": "대댓글러",
+  "password": "1234"
+}
+
+###
+
+### 댓글 목록 조회
+GET {{baseUrl}}/galleries/{{galleryName}}/posts/{{postId}}/comments
+
+###
+
+### 댓글 수정
+PUT {{baseUrl}}/galleries/{{galleryName}}/posts/{{postId}}/comments/{{commentId}}
+Content-Type: application/json
+
+{
+  "content": "수정된 댓글입니다.",
+  "password": "1234"
+}
+
+###
+
+### 댓글 삭제
+DELETE {{baseUrl}}/galleries/{{galleryName}}/posts/{{postId}}/comments/{{commentId}}
+Content-Type: application/json
+
+{
+  "password": "1234"
+}
+
+# =====================
+# Vote
+# =====================
+
+###
+
+### 게시글 추천
+POST {{baseUrl}}/galleries/{{galleryName}}/posts/{{postId}}/like
+
+###
+
+### 게시글 비추천
+POST {{baseUrl}}/galleries/{{galleryName}}/posts/{{postId}}/dislike
+
+###
+
+### 댓글 추천
+POST {{baseUrl}}/galleries/{{galleryName}}/posts/{{postId}}/comments/{{commentId}}/like
+
+# =====================
+# Report
+# =====================
+
+###
+
+### 게시글 신고
+POST {{baseUrl}}/galleries/{{galleryName}}/posts/{{postId}}/reports
+Content-Type: application/json
+
+{
+  "reasonCode": "SPAM",
+  "reasonDetail": "스팸성 게시글입니다."
+}
+
+###
+
+### 댓글 신고
+POST {{baseUrl}}/galleries/{{galleryName}}/posts/{{postId}}/comments/{{commentId}}/reports
+Content-Type: application/json
+
+{
+  "reasonCode": "ABUSE",
+  "reasonDetail": "욕설이 포함된 댓글입니다."
+}
+
+# =====================
+# Search (Elasticsearch 실행 중일 때만 동작)
+# =====================
+
+###
+
+### 게시글 검색
+GET {{baseUrl}}/search/posts?keyword=테스트&page=0&size=10

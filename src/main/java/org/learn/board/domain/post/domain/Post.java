@@ -1,7 +1,6 @@
 package org.learn.board.domain.post.domain;
 
 import jakarta.persistence.*;
-import jakarta.validation.groups.Default;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -9,7 +8,6 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
 import org.learn.board.domain.gallery.domain.Gallery;
 import org.learn.board.global.domain.BaseTimeEntity;
-import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.ArrayList;
@@ -22,7 +20,7 @@ public class Post extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "post_id_seq")
-    @SequenceGenerator(name = "post_id_seq", sequenceName = "POST_ID_SEQ", allocationSize = 1)
+    @SequenceGenerator(name = "post_id_seq", sequenceName = "POST_ID_SEQ", allocationSize = 50)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -68,10 +66,10 @@ public class Post extends BaseTimeEntity {
         this.content = content;
         this.writer = (writer != null) ? writer : "ㅇㅇ";
         this.password = password;
-        this.viewCount = 0;
-        this.likeCount = 0;
-        this.dislikeCount = 0;
-        this.reportCount = 0;
+        this.viewCount = viewCount;
+        this.likeCount = likeCount;
+        this.dislikeCount = dislikeCount;
+        this.reportCount = reportCount;
     }
 
     public void update(String title, String content) {

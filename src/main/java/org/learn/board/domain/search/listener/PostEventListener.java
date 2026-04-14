@@ -37,7 +37,7 @@ public class PostEventListener {
 
             log.info("Elasticsearch 인덱싱 완료. postId: {}", event.getId());
         } catch (Exception e) {
-            log.error("Elasticsearch 인덱싱 중 오류 발생. postId: {}", event.getId());
+            log.error("Elasticsearch 인덱싱 중 오류 발생. postId: {} - {}", event.getId(), e.getMessage());
         }
     }
 }

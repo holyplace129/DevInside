@@ -29,7 +29,7 @@ public class CommentController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    // 게시글 내 딧글 조회
+    // 게시글 내 댓글 조회
     @GetMapping
     public ResponseEntity<List<CommentResponse>> findCommentByPostId(@PathVariable Long postId) {
         List<CommentResponse> responses = commentFacade.findCommentByPost(postId);
@@ -53,7 +53,7 @@ public class CommentController {
             @PathVariable Long commentId,
             @RequestBody Map<String, String> passwordMap) {
         String password = passwordMap.get("password");
-        if (password == null) {
+        if (password == null || password.isBlank()) {
             return ResponseEntity.badRequest().build();
         }
         commentFacade.deleteComment(commentId, password);

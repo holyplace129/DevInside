@@ -35,7 +35,7 @@ public class DistributedLockAspect {
         try {
             boolean isLocked = lock.tryLock(distributedLock.waitTime(), distributedLock.leaseTime(), distributedLock.timeUnit());
             if (!isLocked) {
-                log.warn("락 획득 실패! lockKey: {}" + lockKey);
+                log.warn("락 획득 실패! lockKey: {}", lockKey);
                 throw new IllegalStateException("동시에 많은 요청이 들어와 작업을 처리할 수 없습니다. 잠시 후 다시 시도해주세요.");
             }
 

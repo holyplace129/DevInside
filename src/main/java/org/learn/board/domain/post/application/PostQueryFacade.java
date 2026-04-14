@@ -9,6 +9,8 @@ import org.learn.board.domain.post.application.mapper.PostMapper;
 import org.learn.board.domain.post.domain.Post;
 import org.learn.board.domain.post.domain.repository.PostRepository;
 import org.learn.board.global.common.PageResponse;
+import org.learn.board.global.error.ErrorCode;
+import org.learn.board.global.error.exception.EntityNotFoundException;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -40,7 +42,7 @@ public class PostQueryFacade {
     @Cacheable(value = "galleryPosts", key = "#galleryName + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public PageResponse<PostListResponse> findPostsByGallery(String galleryName, Pageable pageable) {
         Gallery gallery = galleryRepository.findByName(galleryName)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 갤러리입니다."));
+                .orElseThrow(() -> new EntityNotFoundException(ErrorCode.GALLERY_NOT_FOUND));
         Page<Post> posts = postRepository.findByGallery(gallery, pageable);
         Page<PostListResponse> dtoPage = posts.map(postMapper::toListResponse);
 
@@ -51,7 +53,7 @@ public class PostQueryFacade {
     @Cacheable(value = "postDetail", key = "#postId")
     public PostDetailResponse findPostById(Long postId) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+                .orElseThrow(() -> new EntityNotFoundException(ErrorCode.POST_NOT_FOUND));
 
         return postMapper.toDetailResponse(post);
     }

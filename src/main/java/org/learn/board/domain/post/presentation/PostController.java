@@ -55,7 +55,7 @@ public class PostController {
             @PathVariable Long postId,
             @RequestBody Map<String, String> passwordMap) {
         String password = passwordMap.get("password");
-        if (password == null) {
+        if (password == null || password.isBlank()) {
             return ResponseEntity.badRequest().build();
         }
         postFacade.deletePost(postId, password);
@@ -78,8 +78,8 @@ public class PostController {
     public ResponseEntity<PostDetailResponse> findPostById(
             @PathVariable String galleryName,
             @PathVariable Long postId) {
-        PostDetailResponse response = postQueryFacade.findPostById(postId);
         postFacade.increaseViewCount(postId);
+        PostDetailResponse response = postQueryFacade.findPostById(postId);
         return ResponseEntity.ok(response);
     }
 

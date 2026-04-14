@@ -12,6 +12,7 @@ import org.learn.board.domain.report.domain.repository.CommentReportRepository;
 import org.learn.board.domain.report.domain.repository.PostReportRepository;
 import org.learn.board.global.error.ErrorCode;
 import org.learn.board.global.error.exception.EntityNotFoundException;
+import org.learn.board.global.error.exception.InvalidValueException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +32,7 @@ public class ReportFacade {
                 .orElseThrow(() -> new EntityNotFoundException(ErrorCode.POST_NOT_FOUND));
 
         postReportRepository.findByPostAndReporterIp(post, reporterIp).ifPresent(r -> {
-            throw new EntityNotFoundException(ErrorCode.ALREADY_REPORTED);
+            throw new InvalidValueException(ErrorCode.ALREADY_REPORTED);
         });
 
         PostReport postReport = PostReport.builder()
@@ -42,7 +43,7 @@ public class ReportFacade {
                 .build();
         postReportRepository.save(postReport);
 
-        post.increaseReportCount();
+        postRepository.incrementReportCount(postId);
     }
 
     // 댓글 신고
@@ -51,7 +52,7 @@ public class ReportFacade {
                 .orElseThrow(() -> new EntityNotFoundException(ErrorCode.COMMENT_NOT_FOUND));
 
         commentReportRepository.findByCommentAndReporterIp(comment, reporterIp).ifPresent(r -> {
-            throw new EntityNotFoundException(ErrorCode.ALREADY_REPORTED);
+            throw new InvalidValueException(ErrorCode.ALREADY_REPORTED);
         });
 
         CommentReport commentReport = CommentReport.builder()
@@ -63,6 +64,6 @@ public class ReportFacade {
 
         commentReportRepository.save(commentReport);
 
-        comment.increaseReportCount();
+        commentRepository.incrementReportCount(commentId);
     }
 }

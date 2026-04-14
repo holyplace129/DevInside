@@ -8,6 +8,9 @@ import org.learn.board.domain.comment.domain.Comment;
 import org.learn.board.domain.comment.domain.repository.CommentRepository;
 import org.learn.board.domain.post.domain.Post;
 import org.learn.board.domain.post.domain.repository.PostRepository;
+import org.learn.board.global.error.ErrorCode;
+import org.learn.board.global.error.exception.EntityNotFoundException;
+import org.learn.board.global.error.exception.InvalidValueException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,20 +30,32 @@ public class CommentFacade {
     // 댓글 생성
     @Transactional
     public void createComment(Long postId, CommentCreateRequest request) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+        if (!postRepository.existsById(postId)) {
+            throw new EntityNotFoundException(ErrorCode.POST_NOT_FOUND);
+        }
 
-        // 대댓인 경우 부모 댓글 조회
+        // 대댓글인 경우 부모 댓글 검증
         Comment parentComment = null;
         if (request.getParentId() != null) {
             parentComment = commentRepository.findById(request.getParentId())
-                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 부모 댓글입니다."));
+                    .orElseThrow(() -> new EntityNotFoundException(ErrorCode.PARENT_COMMENT_NOT_FOUND));
+
+            // 부모 댓글이 같은 게시글에 속하는지 검증
+            if (!parentComment.getPost().getId().equals(postId)) {
+                throw new InvalidValueException(ErrorCode.INVALID_INPUT_VALUE);
+            }
+
+            // 대댓글의 대댓글 방지 (1단계 대댓글만 허용)
+            if (parentComment.getParent() != null) {
+                throw new InvalidValueException(ErrorCode.INVALID_INPUT_VALUE);
+            }
         }
 
         String encryptedPassword = passwordEncoder.encode(request.getPassword());
 
+        Post postRef = postRepository.getReferenceById(postId);
         Comment comment = Comment.builder()
-                .post(post)
+                .post(postRef)
                 .parent(parentComment)
                 .content(request.getContent())
                 .writer(request.getWriter())
@@ -48,14 +63,14 @@ public class CommentFacade {
                 .build();
 
         commentRepository.save(comment);
-        post.increaseCommentCount();
+        postRepository.incrementCommentCount(postId);
     }
 
     // 게시글 내 댓글 조회
     @Transactional(readOnly = true)
     public List<CommentResponse> findCommentByPost(Long postId) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+                .orElseThrow(() -> new EntityNotFoundException(ErrorCode.POST_NOT_FOUND));
 
         List<Comment> comments = commentRepository.findAllByPost(post);
 
@@ -66,10 +81,10 @@ public class CommentFacade {
     @Transactional
     public void updateComment(Long commentId, CommentUpdateRequest request) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 댓글입니다."));
+                .orElseThrow(() -> new EntityNotFoundException(ErrorCode.COMMENT_NOT_FOUND));
 
         if (!passwordEncoder.matches(request.getPassword(), comment.getPassword())) {
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+            throw new InvalidValueException(ErrorCode.INVALID_PASSWORD);
         }
 
         comment.update(request.getContent());
@@ -79,14 +94,15 @@ public class CommentFacade {
     @Transactional
     public void deleteComment(Long commentId, String password) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 댓글입니다."));
+                .orElseThrow(() -> new EntityNotFoundException(ErrorCode.COMMENT_NOT_FOUND));
 
         if (!passwordEncoder.matches(password, comment.getPassword())) {
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+            throw new InvalidValueException(ErrorCode.INVALID_PASSWORD);
         }
 
+        Long postId = comment.getPost().getId();
         commentRepository.delete(comment);
-        comment.getPost().decreaseCommentCount();
+        postRepository.decrementCommentCount(postId);
     }
 
     // 댓글 계층 구조

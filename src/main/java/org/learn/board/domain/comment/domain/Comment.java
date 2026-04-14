@@ -1,7 +1,6 @@
 package org.learn.board.domain.comment.domain;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,7 +8,8 @@ import org.hibernate.annotations.ColumnDefault;
 import org.learn.board.domain.post.domain.Post;
 import org.learn.board.global.domain.BaseTimeEntity;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @NoArgsConstructor
@@ -18,7 +18,7 @@ public class Comment extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "comment_id_seq")
-    @SequenceGenerator(name = "comment_id_seq", sequenceName = "COMMENT_ID_SEQ", allocationSize = 1)
+    @SequenceGenerator(name = "comment_id_seq", sequenceName = "COMMENT_ID_SEQ", allocationSize = 50)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -28,6 +28,9 @@ public class Comment extends BaseTimeEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
     private Comment parent;
+
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comment> children = new ArrayList<>();
 
     @Column(length = 1000, nullable = false)
     private String content;
@@ -52,8 +55,8 @@ public class Comment extends BaseTimeEntity {
         this.content = content;
         this.writer = (writer != null) ? writer : "ㅇㅇ";
         this.password = password;
-        this.likeCount = 0;
-        this.reportCount = 0;
+        this.likeCount = likeCount;
+        this.reportCount = reportCount;
     }
 
     public void update(String content) {

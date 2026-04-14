@@ -16,6 +16,8 @@ import org.learn.board.global.error.exception.EntityNotFoundException;
 import org.learn.board.global.error.exception.InvalidValueException;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
+
+import java.util.List;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,7 @@ public class PostFacade {
     private final ApplicationEventPublisher eventPublisher;
 
     // 게시글 생성
+    @CacheEvict(value = "galleryPosts", allEntries = true)
     public PostDetailResponse createPost(String galleryName, PostCreateRequest request) {
         Gallery gallery = galleryRepository.findByName(galleryName)
                 .orElseThrow(() -> new EntityNotFoundException(ErrorCode.GALLERY_NOT_FOUND));
@@ -48,13 +51,15 @@ public class PostFacade {
                 .build();
 
         if (request.getImageUrl() != null && !request.getImageUrl().isEmpty()) {
-            request.getImageUrl().forEach(imageUrl -> {
+            List<String> imageUrls = request.getImageUrl();
+            for (int i = 0; i < imageUrls.size(); i++) {
                 PostImage postImage = PostImage.builder()
                         .post(post)
-                        .fileUrl(imageUrl)
+                        .fileUrl(imageUrls.get(i))
+                        .sortOrder(i)
                         .build();
                 post.addImage(postImage);
-            });
+            }
         }
 
         Post savePost = postRepository.save(post);
@@ -100,9 +105,11 @@ public class PostFacade {
         postRepository.delete(post);
     }
 
+    @CacheEvict(value = "postDetail", key = "#postId")
     public void increaseViewCount(Long postId) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new EntityNotFoundException(ErrorCode.POST_NOT_FOUND));
-        post.increaseViewCount();
+        if (!postRepository.existsById(postId)) {
+            throw new EntityNotFoundException(ErrorCode.POST_NOT_FOUND);
+        }
+        postRepository.incrementViewCount(postId);
     }
 }

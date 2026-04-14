@@ -9,6 +9,7 @@ import org.learn.board.domain.gallery.domain.Gallery;
 import org.learn.board.domain.gallery.domain.repository.GalleryRepository;
 import org.learn.board.global.error.ErrorCode;
 import org.learn.board.global.error.exception.EntityNotFoundException;
+import org.learn.board.global.error.exception.InvalidValueException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +27,7 @@ public class GalleryFacade {
     // 갤러리 생성
     public GalleryResponse createGallery(GalleryCreateRequest request) {
         if (galleryRepository.findByName(request.getName()).isPresent()) {
-            throw new EntityNotFoundException(ErrorCode.GALLERY_NAME_DUPLICATED);
+            throw new InvalidValueException(ErrorCode.GALLERY_NAME_DUPLICATED);
         }
 
         Gallery gallery = Gallery.builder()

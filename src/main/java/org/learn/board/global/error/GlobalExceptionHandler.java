@@ -2,6 +2,7 @@ package org.learn.board.global.error;
 
 import lombok.extern.slf4j.Slf4j;
 import org.learn.board.global.error.exception.BusinessException;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -38,6 +39,14 @@ public class GlobalExceptionHandler {
         final ErrorResponse response = ErrorResponse.of(errorCode);
 
         return new ResponseEntity<>(response, errorCode.getStatus());
+    }
+
+    // Elasticsearch 연결 실패
+    @ExceptionHandler(DataAccessResourceFailureException.class)
+    protected ResponseEntity<ErrorResponse> handleDataAccessResourceFailureException(DataAccessResourceFailureException e) {
+        log.error("handleDataAccessResourceFailureException: {}", e.getMessage());
+        final ErrorResponse response = ErrorResponse.of(ErrorCode.SEARCH_SERVICE_UNAVAILABLE);
+        return new ResponseEntity<>(response, ErrorCode.SEARCH_SERVICE_UNAVAILABLE.getStatus());
     }
 
     // 정의되지 않은 예외

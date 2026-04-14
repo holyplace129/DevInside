@@ -10,7 +10,7 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 import java.time.LocalDateTime;
 
 @Getter
-@Document(indexName = "posts")
+@Document(indexName = "posts", createIndex = false)
 public class PostDocument {
 
     @Id
