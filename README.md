@@ -1,92 +1,276 @@
-# 대용량 트래픽 처리를 위한 고성능 커뮤니티 백엔드, DevInside
-**(부제: Redis 캐싱, 분산 락, 검색 엔진 도입을 통한 성능 최적화 및 확장성 확보)**
+# DevInside — 대용량 트래픽을 고려한 익명 커뮤니티 백엔드
 
-## Project Overview
-대규모 트래픽이 발생하는 커뮤니티 서비스를 가정하여, **성능 최적화, 데이터 정합성, 시스템 확장성**을 고려한 백엔드 시스템을 구축했습니다. 단순한 기능 구현을 넘어, 발생 가능한 기술적 문제를 정의하고 이를 해결하는 과정에 집중했습니다.
+**DCInside 스타일의 갤러리 기반 익명 게시판**  
+로그인 없이 비밀번호만으로 게시글·댓글을 관리하며, Redis 캐싱·분산 락·Elasticsearch를 통한 성능 최적화와 동시성 제어에 집중한 백엔드 프로젝트입니다.
 
-- **기간**: 202X.XX - 202X.XX
+- **기간**: 2025.07 — 2025.07
 - **인원**: 개인 프로젝트
-- **Tech Blog**: (블로그 링크가 있다면 여기에 추가)
-- **API Docs**: (Notion 또는 Swagger 링크가 있다면 여기에 추가)
+- **GitHub**: https://github.com/holyplace129/DevInside
+
+---
+
+## 목차
+
+- [Tech Stack](#tech-stack)
+- [System Architecture](#system-architecture)
+- [Key Technical Challenges](#key-technical-challenges)
+- [API Endpoints](#api-endpoints)
+- [Project Structure](#project-structure)
+- [Local Setup](#local-setup)
+- [Technical Decision](#technical-decision)
 
 ---
 
 ## Tech Stack
-| 분류 | 기술 |
-| :--- | :--- |
-| **Language** | Java 17 |
-| **Framework** | Spring Boot 3.2, Spring Batch, Spring Security, Spring Data JPA |
-| **Database** | MySQL 8.0, Redis, H2 (Test) |
-| **Search Engine** | Elasticsearch 8.11 |
-| **Testing** | JUnit5, JMeter |
-| **Build Tool** | Gradle (Kotlin DSL) |
-| **DevOps** | Docker, Docker Compose |
+
+| 분류 | 기술 | 버전 |
+| :--- | :--- | :--- |
+| Language | Java | 17 |
+| Framework | Spring Boot | 3.5.4 |
+| Framework | Spring Security | 6.5.x |
+| ORM | Spring Data JPA / Hibernate | 6.6.x |
+| Database | MySQL | 8.x |
+| Cache | Spring Cache + Redis (Lettuce) | - |
+| Distributed Lock | Redisson | 3.27.2 |
+| Search | Spring Data Elasticsearch | 5.x |
+| Batch | Spring Batch | 5.x |
+| Mapping | MapStruct | 1.5.5.Final |
+| Build | Gradle | 8.x |
 
 ---
 
 ## System Architecture
-<img width="4311" height="2142" alt="Image" src="https://github.com/user-attachments/assets/256edff3-2b37-4627-8d25-d9f0463cea50" />
 
-**핵심 아키텍처 특징:**
-*   **Layered Architecture (DDD)**: `Controller -> Facade -> Domain`의 계층형 구조로 관심사 분리
-*   **CQRS Pattern**: Command(MySQL), Query(Redis), Search(Elasticsearch)의 역할 분리를 통한 성능 최적화
-*   **Event-Driven**: Spring Event를 활용한 비동기 데이터 동기화 (Decoupling)
-*   **Distributed Lock**: Redis(Redisson)를 활용한 분산 환경 동시성 제어
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                         Client (HTTP)                            │
+└──────────────────────────┬───────────────────────────────────────┘
+                           │ REST API
+┌──────────────────────────▼───────────────────────────────────────┐
+│                    Presentation Layer                             │
+│   GalleryController · PostController · CommentController         │
+│   VoteController · ReportController · SearchController           │
+│   ImageController                                                │
+└───────────────┬──────────────────────────────┬───────────────────┘
+                │ Command                      │ Query
+┌───────────────▼───────────┐   ┌──────────────▼────────────────┐
+│      Command Facade        │   │       Query Facade             │
+│  PostFacade                │   │  PostQueryFacade               │
+│  CommentFacade             │   │  GalleryQueryFacade            │
+│  VoteFacade                │   │  SearchFacade                  │
+│  ReportFacade              │   │                                │
+│  GalleryFacade             │   │  @Cacheable (Redis)            │
+│  ImageFacade               │   │  TTL: 10분                     │
+└───────┬───────────┬────────┘   └───────┬───────────────────────┘
+        │           │                    │
+        │     ┌─────▼──────┐       ┌─────▼──────┐
+        │     │  Redisson   │       │   Redis    │
+        │     │ Distributed │       │   Cache    │
+        │     │    Lock     │       │            │
+        │     └─────────────┘       └────────────┘
+┌───────▼────────────────────────────────────────────────────────┐
+│                       Domain Layer                              │
+│  Post · Comment · Vote · Report · Gallery · PostImage          │
+│  원자적 JPQL @Modifying 쿼리로 카운트 동시성 보장              │
+└─────────────────────────────┬──────────────────────────────────┘
+                              │
+              ┌───────────────▼───────────────┐
+              │           MySQL               │
+              └───────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────┐
+│                     비동기 / 배치 레이어                        │
+│                                                                │
+│  게시글 저장/수정                                              │
+│  → ApplicationEventPublisher                                   │
+│  → PostEventListener (@Async, @TransactionalEventListener)     │
+│  → Elasticsearch 인덱싱 (posts 인덱스)                         │
+│                                                                │
+│  BatchScheduler (10분 Cron)                                    │
+│  → Spring Batch: JpaPagingItemReader → Processor → Writer      │
+│  → 인기 게시글 집계 결과 → Redis 저장 (TTL: 15분)              │
+└────────────────────────────────────────────────────────────────┘
+```
+
+**핵심 아키텍처 특징**
+
+- **Layered Architecture (DDD)**: `Controller → Facade → Domain` 계층형 구조로 관심사 분리
+- **Command/Query 분리**: `PostFacade`(쓰기) + `PostQueryFacade`(읽기)로 역할 분리
+- **Event-Driven 인덱싱**: Spring Event + `@TransactionalEventListener`로 ES 인덱싱을 트랜잭션과 분리
+- **Distributed Lock**: Redisson `@DistributedLock` AOP로 비즈니스 로직과 락 로직 분리
+
+---
+
+## Key Technical Challenges
+
+### 1. 추천 카운트 Lost Update — 분산 락 + 원자적 쿼리
+
+**문제**  
+`post.increaseLikeCount()` (JPA Dirty Checking 방식)는 여러 스레드가 동시에 같은 값을 읽은 뒤 각자 +1해 덮어쓰는 Lost Update가 발생한다. 분산 락만으로는 중복 추천을 막을 수 있지만 락 해제 직후 이전 값을 읽어 둔 스레드가 업데이트하면 카운트가 소실된다.
+
+**해결**  
+`PostRepository`에 `@Modifying @Query("UPDATE Post p SET p.likeCount = p.likeCount + 1 WHERE p.id = :postId")` 원자적 쿼리를 추가하고 모든 카운트 증가를 DB 레벨 연산으로 교체했다. 분산 락은 중복 방지, 원자적 쿼리는 카운트 정확성으로 역할을 분리했다.
+
+**결과**  
+추천·비추천·신고·댓글 수 총 7개 카운트 필드에서 동시성 오류 없이 정확한 카운트가 보장된다.
 
 ---
 
-## Key Achievements & Problem Solving
+### 2. 게시글 조회수 캐시 정합성 — @CacheEvict 순서 제어
 
-### [Challenge 1] 조회 API 성능 병목 해결과 캐싱 전략의 진화
-> **Goal**: 대용량 트래픽 상황에서 게시글 목록 조회 API의 응답 속도 및 처리량 개선
+**문제**  
+상세 조회 API에서 `@Cacheable`로 캐시를 먼저 읽고 그 다음 `viewCount`를 DB에 증가시켰다. 반환된 응답에는 증가 전 값이 담기고 이후 TTL(10분) 동안 모든 사용자에게 stale한 조회수가 표시됐다.
 
-*   **Problem**: JMeter 부하 테스트 결과, MySQL 직접 조회 시 **705.7 TPS**의 낮은 성능 기록. DB Disk I/O가 병목임을 확인.
-*   **Process**:
-    *   **1차 (Local Cache)**: Caffeine 도입으로 **6759.8 TPS** 달성. 단, Scale-out 시 데이터 불일치(Inconsistency) 한계 확인.
-    *   **2차 (Global Cache)**: Redis 도입. `Serializable` 직렬화 문제를 JSON 직렬화(`GenericJackson2JsonRedisSerializer`)와 Jackson 커스텀 설정(`@JsonCreator`)으로 해결.
-*   **Solve**:
-    *   Redis Global Cache 적용 및 `@CacheEvict`를 통한 데이터 정합성 보장.
-    *   안정적인 API 계약을 위해 `Page` 객체 대신 `PageResponse` DTO 도입.
-*   **Result**: 최종 **7216.0 TPS** 달성 (초기 대비 **10.2배** 성능 향상).
+**해결**  
+`increaseViewCount()`에 `@CacheEvict(value = "postDetail", key = "#postId")`를 추가하고 컨트롤러 호출 순서를 *증가 → 캐시 무효화 → 조회* 순으로 변경했다. `viewCount` 증가도 `UPDATE viewCount = viewCount + 1` 원자적 쿼리로 전환했다.
 
-### [Challenge 2] 좋아요 누락: 분산 환경에서의 동시성 제어
-> **Goal**: 다중 사용자 동시 추천 시 발생하는 데이터 유실(Race Condition) 방지
-
-*   **Problem**: 100명의 동시 추천 요청 테스트 시, DB에 **50개**만 카운트되는 데이터 정합성 문제 발생.
-*   **Process**:
-    *   `synchronized`는 단일 서버(JVM)에서만 유효하므로 분산 환경에서 부적합.
-    *   DB Lock(Pessimistic)은 성능 저하 및 데드락 위험 존재.
-    *   이미 사용 중인 **Redis**를 활용한 분산 락 도입 결정.
-*   **Solve**:
-    *   **Redisson 도입**: Pub/Sub 방식을 통해 스핀 락(Spin Lock)으로 인한 Redis 부하 최소화.
-    *   **AOP 구현**: `@DistributedLock` 어노테이션을 직접 구현하여 비즈니스 로직과 락킹 로직 분리.
-    *   **트랜잭션 문제 해결**: AOP 우선순위(`@Order`)를 조정하여 **'트랜잭션 커밋 후 락 해제'**를 강제함으로써 정합성 보장.
-*   **Result**: 통합 테스트 결과 100개의 동시 요청에도 **누락 없이 100% 카운트**됨을 검증.
-
-### [Challenge 3] 대용량 데이터 처리를 위한 배치 최적화
-> **Goal**: 인기 게시글 집계를 위한 10만 건 이상의 데이터 효율적 처리
-
-*   **Problem**: `DataInitializer`로 대용량 더미 데이터 생성 시 `OutOfMemory` 발생 및 DB 부하 급증. 단순 스케줄러(`@Scheduled`)로는 10만 건 처리가 불가능.
-*   **Process**: 대용량 데이터는 메모리에 한 번에 올리는 것이 아니라, 나누어 처리해야 함을 인지.
-*   **Solve**:
-    *   **Spring Batch 도입**: 데이터를 1,000개 단위의 **Chunk**로 나누어 처리하여 메모리 사용량을 일정하게 유지.
-    *   **JDBC Batch Insert**: `rewriteBatchedStatements=true` 옵션 활성화 및 ID 채번 전략을 `IDENTITY`에서 `SEQUENCE`로 변경하여, 1만 번의 `INSERT` 쿼리를 **단 10번의 네트워크 통신**으로 최적화.
-*   **Result**: 메모리 사용량 **90% 이상 절감** 및 대용량 데이터 처리 속도 획기적 단축.
-
-### [Challenge 4] RDBMS 검색 한계 극복과 검색 엔진 도입
-> **Goal**: `LIKE` 검색의 성능 저하 문제 해결 및 검색 품질 향상
-
-*   **Problem**: 데이터 증가 시 `LIKE` 검색은 **Full Table Scan**으로 인해 성능이 급격히 저하됨. 또한 'JPA' 검색 시 'JPA는'을 찾지 못하는 등 형태소 분석 부재.
-*   **Solve**:
-    *   **Elasticsearch 도입**: 역인덱스(Inverted Index) 구조를 활용하여 검색 성능을 **O(1)**에 가깝게 최적화.
-    *   **비동기 동기화**: `Spring Event`(`@TransactionalEventListener`)와 `@Async`를 활용하여, 트랜잭션과 검색 인덱싱을 분리(Decoupling)함으로써 시스템 응답 속도와 안정성 확보.
+**결과**  
+사용자에게 항상 최신 조회수가 반환되며 캐시는 조회 즉시 재갱신되어 DB 부하가 낮게 유지된다.
 
 ---
 
-## Technical Decision (Why?)
+### 3. Elasticsearch 장애 시 검색 전체 중단 — DB 폴백
 
-*   **Redis & SPOF**: 단순 캐싱뿐만 아니라 분산 락, 랭킹 시스템 등 활용도가 높아 선택했습니다. SPOF(Single Point of Failure)를 대비해 향후 Redis Sentinel 또는 Cluster 도입을 고려하고 있습니다.
-*   **JWT vs Session**: Scale-out 환경을 전제로 하기에, 별도의 세션 저장소 없이 인증이 가능한 Stateless한 JWT를 선택했습니다.
-*   **JPA vs MyBatis**: 도메인 주도 설계(DDD)와 객체지향적 모델링의 이점을 살리기 위해 JPA를 선택했습니다. 복잡한 쿼리는 QueryDSL(향후 도입 예정)이나 Elasticsearch로 보완합니다.
+**문제**  
+검색이 Elasticsearch에만 의존해, ES 연결 실패 시 `DataAccessResourceFailureException`이 전파되어 503이 반환됐다. 게시글 인덱싱도 `@Async` 실패 시 로그만 출력하고 재시도 없이 무시되었다.
+
+**해결**  
+`SearchFacade`에서 `DataAccessResourceFailureException`을 catch해 MySQL `LIKE` 검색으로 자동 폴백한다. ES 인덱싱은 `@TransactionalEventListener`(트랜잭션 커밋 후 수신) + `@Async`(별도 스레드)로 HTTP 응답과 완전히 분리했다.
+
+**결과**  
+ES 정상 시 전문 검색, 장애 시 DB 검색으로 자동 전환되어 서비스 연속성이 보장된다. 인덱싱 실패가 API 응답에 영향을 주지 않는다.
 
 ---
+
+## API Endpoints
+
+### Gallery
+| Method | URL | 설명 |
+|--------|-----|------|
+| `GET` | `/galleries` | 갤러리 목록 |
+| `GET` | `/galleries/{name}` | 갤러리 상세 |
+| `POST` | `/galleries` | 갤러리 생성 |
+| `PUT` | `/galleries/{name}` | 갤러리 수정 |
+| `DELETE` | `/galleries/{name}` | 갤러리 삭제 |
+
+### Post
+| Method | URL | 설명 |
+|--------|-----|------|
+| `GET` | `/galleries/{galleryName}/posts` | 게시글 목록 (페이지네이션) |
+| `GET` | `/galleries/{galleryName}/posts/{postId}` | 게시글 상세 |
+| `GET` | `/galleries/{galleryName}/posts/popular` | 인기 게시글 (Redis) |
+| `POST` | `/galleries/{galleryName}/posts` | 게시글 작성 |
+| `PUT` | `/galleries/{galleryName}/posts/{postId}` | 게시글 수정 (비밀번호 필요) |
+| `DELETE` | `/galleries/{galleryName}/posts/{postId}` | 게시글 삭제 (비밀번호 필요) |
+
+### Comment
+| Method | URL | 설명 |
+|--------|-----|------|
+| `GET` | `/galleries/{galleryName}/posts/{postId}/comments` | 댓글 목록 (계층형) |
+| `POST` | `/galleries/{galleryName}/posts/{postId}/comments` | 댓글/대댓글 작성 |
+| `PUT` | `/galleries/{galleryName}/posts/{postId}/comments/{commentId}` | 댓글 수정 (비밀번호 필요) |
+| `DELETE` | `/galleries/{galleryName}/posts/{postId}/comments/{commentId}` | 댓글 삭제 (비밀번호 필요) |
+
+### Vote & Report
+| Method | URL | 설명 |
+|--------|-----|------|
+| `POST` | `/galleries/{galleryName}/posts/{postId}/like` | 게시글 추천 (IP 기반 중복 방지) |
+| `POST` | `/galleries/{galleryName}/posts/{postId}/dislike` | 게시글 비추천 |
+| `POST` | `/galleries/{galleryName}/posts/{postId}/comments/{commentId}/like` | 댓글 추천 |
+| `POST` | `/galleries/{galleryName}/posts/{postId}/reports` | 게시글 신고 |
+| `POST` | `/galleries/{galleryName}/posts/{postId}/comments/{commentId}/reports` | 댓글 신고 |
+
+### Search & Image
+| Method | URL | 설명 |
+|--------|-----|------|
+| `GET` | `/search/posts?keyword={keyword}` | 게시글 검색 (ES → DB 폴백) |
+| `POST` | `/images` | 이미지 업로드 |
+
+---
+
+## Project Structure
+
+```
+src/main/java/org/learn/board/
+├── domain/
+│   ├── gallery/          # 갤러리 도메인
+│   ├── post/             # 게시글 도메인
+│   │   ├── application/  # Facade, DTO, Mapper
+│   │   ├── batch/        # Spring Batch (인기 게시글 집계)
+│   │   ├── domain/       # Entity, Repository
+│   │   ├── event/        # PostSavedEvent
+│   │   └── presentation/ # Controller
+│   ├── comment/          # 댓글 도메인
+│   ├── vote/             # 추천/비추천 도메인
+│   ├── report/           # 신고 도메인
+│   ├── search/           # 검색 도메인 (Elasticsearch)
+│   └── image/            # 이미지 업로드
+├── global/
+│   ├── aop/              # @DistributedLock AOP
+│   ├── config/           # Redis, Security 설정
+│   ├── domain/           # BaseTimeEntity
+│   ├── error/            # GlobalExceptionHandler, ErrorCode
+│   ├── init/             # DummyData Batch
+│   └── util/             # ClientIpUtil
+└── BoardApplication.java
+```
+
+---
+
+## Local Setup
+
+### 사전 요구사항
+
+- Java 17
+- MySQL 8.x
+- Redis 7.x
+- Elasticsearch 8.x (선택 — 없으면 DB 검색으로 폴백)
+
+### 실행 방법
+
+**1. MySQL 데이터베이스 생성**
+```sql
+CREATE DATABASE board_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'board_user'@'localhost' IDENTIFIED BY '0000';
+GRANT ALL PRIVILEGES ON board_db.* TO 'board_user'@'localhost';
+```
+
+**2. application.yml 확인 (기본값)**
+```yaml
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/board_db
+    username: board_user
+    password: '0000'
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  elasticsearch:
+    uris: http://localhost:9200
+
+custom:
+  upload:
+    path: C:/codes/board/uploads/   # 이미지 저장 경로 (환경에 맞게 수정)
+```
+
+**3. 빌드 및 실행**
+```bash
+./gradlew bootRun
+```
+
+**4. 더미 데이터 삽입 (선택)**  
+`application.yml`에서 `spring.batch.job.enabled: true`로 변경 후 실행하면 `DummyDataBatchConfiguration`이 동작합니다.
+
+---
+
+## Technical Decision
+
+| 기술 | 선택 이유 |
+|------|-----------|
+| **Redisson (분산 락)** | Lettuce 대비 tryLock 타임아웃 제어 용이, Pub/Sub 방식으로 스핀 락 부하 최소화, SpEL로 동적 락 키 생성 |
+| **Spring Cache + Redis** | 갤러리 목록·게시글 상세 반복 조회 비용 감소, TTL 10분으로 DB 부하 분산 |
+| **Spring Batch** | 인기 게시글 집계를 Chunk(100) 단위로 처리해 메모리 일정하게 유지, 실패 재시작 포인트 관리 |
+| **@TransactionalEventListener** | 트랜잭션 롤백 시 ES 인덱싱 방지, DB 커밋 확정 후에만 인덱싱 수행 |
+| **원자적 JPQL @Modifying** | 애플리케이션 레벨 락 없이 DB 레벨 연산으로 카운트 정확성 보장 |
+| **익명 게시판 (비밀번호 방식)** | 로그인 없이 BCrypt 해시 비밀번호로 게시글·댓글 수정/삭제 권한 관리 |
