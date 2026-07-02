@@ -1,6 +1,6 @@
 # DevInside — 대용량 트래픽을 고려한 익명 커뮤니티 백엔드
 
-**DCInside 스타일의 갤러리 기반 익명 게시판**  
+**주제 기반 익명 게시판**  
 로그인 없이 비밀번호만으로 게시글·댓글을 관리하며, Redis 캐싱·분산 락·Elasticsearch를 통한 성능 최적화와 동시성 제어에 집중한 백엔드 프로젝트입니다.
 
 - **기간**: 2025.07 — 2025.07
@@ -41,56 +41,7 @@
 
 ## System Architecture
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                         Client (HTTP)                            │
-└──────────────────────────┬───────────────────────────────────────┘
-                           │ REST API
-┌──────────────────────────▼───────────────────────────────────────┐
-│                    Presentation Layer                             │
-│   GalleryController · PostController · CommentController         │
-│   VoteController · ReportController · SearchController           │
-│   ImageController                                                │
-└───────────────┬──────────────────────────────┬───────────────────┘
-                │ Command                      │ Query
-┌───────────────▼───────────┐   ┌──────────────▼────────────────┐
-│      Command Facade        │   │       Query Facade             │
-│  PostFacade                │   │  PostQueryFacade               │
-│  CommentFacade             │   │  GalleryQueryFacade            │
-│  VoteFacade                │   │  SearchFacade                  │
-│  ReportFacade              │   │                                │
-│  GalleryFacade             │   │  @Cacheable (Redis)            │
-│  ImageFacade               │   │  TTL: 10분                     │
-└───────┬───────────┬────────┘   └───────┬───────────────────────┘
-        │           │                    │
-        │     ┌─────▼──────┐       ┌─────▼──────┐
-        │     │  Redisson   │       │   Redis    │
-        │     │ Distributed │       │   Cache    │
-        │     │    Lock     │       │            │
-        │     └─────────────┘       └────────────┘
-┌───────▼────────────────────────────────────────────────────────┐
-│                       Domain Layer                              │
-│  Post · Comment · Vote · Report · Gallery · PostImage          │
-│  원자적 JPQL @Modifying 쿼리로 카운트 동시성 보장              │
-└─────────────────────────────┬──────────────────────────────────┘
-                              │
-              ┌───────────────▼───────────────┐
-              │           MySQL               │
-              └───────────────────────────────┘
-
-┌────────────────────────────────────────────────────────────────┐
-│                     비동기 / 배치 레이어                        │
-│                                                                │
-│  게시글 저장/수정                                              │
-│  → ApplicationEventPublisher                                   │
-│  → PostEventListener (@Async, @TransactionalEventListener)     │
-│  → Elasticsearch 인덱싱 (posts 인덱스)                         │
-│                                                                │
-│  BatchScheduler (10분 Cron)                                    │
-│  → Spring Batch: JpaPagingItemReader → Processor → Writer      │
-│  → 인기 게시글 집계 결과 → Redis 저장 (TTL: 15분)              │
-└────────────────────────────────────────────────────────────────┘
-```
+<img width="623" height="1103" alt="Image" src="https://github.com/user-attachments/assets/511254e2-18d1-4979-bd28-64dfbf612910" />
 
 **핵심 아키텍처 특징**
 
