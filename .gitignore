@@ -118,3 +118,6 @@ fabric.properties
 # SMTP Secret Key
 src/main/resources/smtpproperties.yml
 .src/main/resources/smtpproperties.yml
+
+# docs
+/docs/
